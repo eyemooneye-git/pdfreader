@@ -8,3 +8,4 @@ frozen-report.json
 pdfreader-crash.log
 *.log
 *.spec.bak
+*.exe
