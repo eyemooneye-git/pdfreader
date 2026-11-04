@@ -1,0 +1,31 @@
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(1, 0, 0, 0),
+    prodvers=(1, 0, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable(
+        "040904B0",
+        [
+          StringStruct("CompanyName", "pdfreader"),
+          StringStruct("FileDescription", "pdfreader - lightweight PDF reader"),
+          StringStruct("FileVersion", "1.0.0.0"),
+          StringStruct("InternalName", "pdfreader"),
+          StringStruct("LegalCopyright", "Original artwork; no Adobe trademarks."),
+          StringStruct("OriginalFilename", "pdfreader.exe"),
+          StringStruct("ProductName", "pdfreader"),
+          StringStruct("ProductVersion", "1.0.0.0"),
+          StringStruct("Comments", "Text selection, search, outline, tabs, dark mode.")
+        ]
+      )
+    ]),
+    VarFileInfo([VarStruct("Translation", [1033, 1200])])
+  ]
+)

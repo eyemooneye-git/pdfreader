@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+build/
+dist/
+wheels/
+selftest-report.json
+frozen-report.json
+pdfreader-crash.log
+*.log
+*.spec.bak
