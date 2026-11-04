@@ -70,6 +70,8 @@ class PdfSidebar(QWidget):
 
     def __init__(self, document: PdfDocument, parent=None) -> None:
         super().__init__(parent)
+        self.setObjectName("SidebarPanel")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.document = document
         self._syncing = False
         self._thumb_page = 0
@@ -78,7 +80,9 @@ class PdfSidebar(QWidget):
         self._thumb_timer.timeout.connect(self._make_thumbnails)
 
         self.tabs = QTabWidget(self)
-        self.tabs.setDocumentMode(True)
+        self.tabs.setObjectName("SidebarTabs")
+        self.tabs.tabBar().setExpanding(True)
+        self.tabs.tabBar().setDrawBase(False)
 
         # ---------------------------------------------------------- outline
         self.outline = QTreeWidget(self)
@@ -114,6 +118,12 @@ class PdfSidebar(QWidget):
 
         self.setMinimumWidth(220)
         self.setMaximumWidth(560)
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        # QTabBar sizes itself to its tabs; stretch it across the panel so the
+        # two tabs share the full width.
+        self.tabs.tabBar().setMinimumWidth(self.width())
 
     # --------------------------------------------------------------- outline
     def _fill_outline(self) -> None:

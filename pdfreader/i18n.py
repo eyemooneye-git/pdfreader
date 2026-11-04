@@ -68,7 +68,7 @@ _EN: dict[str, str] = {
     "复制全文": "Copy All Text",
     "清除选择": "Clear Selection",
     "查找…": "Find…",
-    "目录侧栏": "Sidebar",
+    "导航栏": "Navigation bar",
     "放大": "Zoom In",
     "缩小": "Zoom Out",
     "适应宽度": "Fit Width",
@@ -139,7 +139,7 @@ _EN: dict[str, str] = {
     "Ctrl+2    适应页面\n"
     "Ctrl++/-  放大 / 缩小\n"
     "Ctrl+滚轮 缩放\n"
-    "F4        显示 / 隐藏目录侧栏\n"
+    "F4        显示 / 隐藏导航栏\n"
     "F11       全屏\n"
     "PageUp/Down、空格  翻页 / 滚动\n"
     "Esc       清除选择":
@@ -153,7 +153,7 @@ _EN: dict[str, str] = {
         "Ctrl+2    Fit page\n"
         "Ctrl++/-  Zoom in / out\n"
         "Ctrl+wheel  Zoom\n"
-        "F4        Show / hide sidebar\n"
+        "F4        Show / hide navigation bar\n"
         "F11       Full screen\n"
         "PageUp/Down, Space  Page / scroll\n"
         "Esc       Clear selection",

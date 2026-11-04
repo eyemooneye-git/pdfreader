@@ -62,9 +62,10 @@ from .assoc import (
 )
 from .document import PasswordRequired, PdfDocument, PdfError
 from .i18n import install_qt_translator, tr
+from .icons import open_icon, print_icon
 from .printing import print_document
 from .sidebar import PdfSidebar
-from .theme import palette, stylesheet
+from .theme import colors, palette, stylesheet
 from .view import PdfView
 
 APP_NAME = "pdfreader"
@@ -103,6 +104,12 @@ def _natural_size(size: int) -> str:
             return f"{value:.0f} {unit}" if unit == "B" else f"{value:.1f} {unit}"
         value /= 1024.0
     return f"{size} B"
+
+
+def _tooltip(action: QAction) -> str:
+    """Action text plus its shortcut, for icon-only toolbar buttons."""
+    shortcut = action.shortcut().toString()
+    return f"{action.text()}  ({shortcut})" if shortcut else action.text()
 
 
 class SearchEdit(QLineEdit):
@@ -242,14 +249,15 @@ class PdfTab(QWidget):
         self.document = document
         self.view = PdfView(document, self)
         self.sidebar = PdfSidebar(document, self)
-        self.sidebar.setObjectName("SidebarTabs")
         self.sidebar_width = max(
             self.sidebar.minimumWidth(),
             min(self.sidebar.maximumWidth(), int(sidebar_width)),
         )
 
         self.splitter = QSplitter(Qt.Orientation.Horizontal, self)
+        self.splitter.setObjectName("SidebarSplitter")
         self.splitter.setChildrenCollapsible(False)
+        self.splitter.setHandleWidth(4)
         self.splitter.addWidget(self.sidebar)
         self.splitter.addWidget(self.view)
         self.splitter.setStretchFactor(0, 0)
@@ -503,7 +511,7 @@ class MainWindow(QMainWindow):
         self.action_find.setShortcut(QKeySequence.StandardKey.Find)
         self.action_find.triggered.connect(self.focus_search)
 
-        self.action_sidebar = QAction(tr("目录侧栏"), self)
+        self.action_sidebar = QAction(tr("导航栏"), self)
         self.action_sidebar.setCheckable(True)
         self.action_sidebar.setChecked(self.sidebar_visible)
         self.action_sidebar.setShortcut(QKeySequence(Qt.Key.Key_F4))
@@ -604,6 +612,11 @@ class MainWindow(QMainWindow):
 
         toolbar.addAction(self.action_open)
         toolbar.addAction(self.action_print)
+        for action in (self.action_open, self.action_print):
+            button = toolbar.widgetForAction(action)
+            if isinstance(button, QToolButton):
+                button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+                button.setToolTip(_tooltip(action))
         toolbar.addSeparator()
         toolbar.addAction(self.action_sidebar)
         toolbar.addSeparator()
@@ -715,6 +728,7 @@ class MainWindow(QMainWindow):
 
     # ------------------------------------------------------------------ theme
     def apply_theme(self) -> None:
+        self._refresh_action_icons()
         app = QApplication.instance()
         if app is not None:
             app.setPalette(palette(self.dark_mode))
@@ -723,6 +737,11 @@ class MainWindow(QMainWindow):
             tab = self.tabs.widget(index)
             if isinstance(tab, PdfTab):
                 tab.view.set_dark_background(self.dark_mode)
+
+    def _refresh_action_icons(self) -> None:
+        tint = colors(self.dark_mode)["text"]
+        self.action_open.setIcon(open_icon(tint))
+        self.action_print.setIcon(print_icon(tint))
 
     def set_dark_mode(self, enabled: bool) -> None:
         if enabled == self.dark_mode:
@@ -1277,7 +1296,7 @@ class MainWindow(QMainWindow):
                 "Ctrl+2    适应页面\n"
                 "Ctrl++/-  放大 / 缩小\n"
                 "Ctrl+滚轮 缩放\n"
-                "F4        显示 / 隐藏目录侧栏\n"
+                "F4        显示 / 隐藏导航栏\n"
                 "F11       全屏\n"
                 "PageUp/Down、空格  翻页 / 滚动\n"
                 "Esc       清除选择"

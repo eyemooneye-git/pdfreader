@@ -40,9 +40,10 @@ def palette(dark: bool) -> QPalette:
     return p
 
 
-def stylesheet(dark: bool) -> str:
+def colors(dark: bool) -> dict[str, str]:
+    """Theme colour tokens shared by the stylesheet and the painted icons."""
     if dark:
-        c = {
+        return {
             "window": "#0F1115",
             "panel": "#171A21",
             "base": "#1B1F27",
@@ -62,29 +63,36 @@ def stylesheet(dark: bool) -> str:
             "scroll_handle": "#667386",
             "scroll_handle_hover": "#8996A8",
             "scroll_handle_pressed": "#A7B3C3",
+            "divider": "#39404E",
+            "divider_hover": "#4B5563",
         }
-    else:
-        c = {
-            "window": "#F3F4F6",
-            "panel": "#FFFFFF",
-            "base": "#FFFFFF",
-            "text": "#111827",
-            "muted": "#6B7280",
-            "border": "#E5E7EB",
-            "hover": "#F3F4F6",
-            "accent": "#2563EB",
-            "accent_hover": "#1D4ED8",
-            "accent_text": "#FFFFFF",
-            "selected": "#DBEAFE",
-            "view": "#E7E9EE",
-            "handle": "#CBD5E1",
-            "handle_hover": "#94A3B8",
-            "scroll_track": "#E1E6ED",
-            "scroll_border": "#B9C3D0",
-            "scroll_handle": "#728096",
-            "scroll_handle_hover": "#5B6B7F",
-            "scroll_handle_pressed": "#475569",
-        }
+    return {
+        "window": "#F3F4F6",
+        "panel": "#FFFFFF",
+        "base": "#FFFFFF",
+        "text": "#111827",
+        "muted": "#6B7280",
+        "border": "#E5E7EB",
+        "hover": "#F3F4F6",
+        "accent": "#2563EB",
+        "accent_hover": "#1D4ED8",
+        "accent_text": "#FFFFFF",
+        "selected": "#DBEAFE",
+        "view": "#E7E9EE",
+        "handle": "#CBD5E1",
+        "handle_hover": "#94A3B8",
+        "scroll_track": "#E1E6ED",
+        "scroll_border": "#B9C3D0",
+        "scroll_handle": "#728096",
+        "scroll_handle_hover": "#5B6B7F",
+        "scroll_handle_pressed": "#475569",
+        "divider": "#CDD5E0",
+        "divider_hover": "#AEB9C8",
+    }
+
+
+def stylesheet(dark: bool) -> str:
+    c = colors(dark)
 
     return f"""
     QWidget {{
@@ -179,6 +187,34 @@ def stylesheet(dark: bool) -> str:
     }}
     QTabBar::close-button {{ margin: 2px; }}
 
+    QTabWidget#SidebarTabs::pane {{
+        border: none;
+        background: {c['panel']};
+    }}
+    QTabWidget#SidebarTabs QTabBar {{
+        background: {c['panel']};
+        border-bottom: 1px solid {c['border']};
+        padding: 0 6px;
+    }}
+    QTabWidget#SidebarTabs QTabBar::tab {{
+        background: transparent;
+        color: {c['muted']};
+        border: none;
+        border-radius: 7px;
+        padding: 6px 10px;
+        margin: 6px 3px;
+        min-width: 66px;
+    }}
+    QTabWidget#SidebarTabs QTabBar::tab:hover {{
+        background: {c['hover']};
+        color: {c['text']};
+    }}
+    QTabWidget#SidebarTabs QTabBar::tab:selected {{
+        background: {c['selected']};
+        color: {c['text']};
+        border: none;
+    }}
+
     QTreeWidget, QListWidget {{
         background: {c['panel']};
         border: none;
@@ -230,6 +266,12 @@ def stylesheet(dark: bool) -> str:
 
     QGraphicsView {{ background: {c['view']}; border: none; }}
     QSplitter::handle {{ background: {c['border']}; width: 1px; height: 1px; }}
+    QSplitter#SidebarSplitter::handle {{
+        background: {c['divider']};
+        width: 4px;
+    }}
+    QSplitter#SidebarSplitter::handle:hover {{ background: {c['divider_hover']}; }}
+    QSplitter#SidebarSplitter::handle:pressed {{ background: {c['accent']}; }}
 
     QScrollBar:vertical {{
         background: {c['scroll_track']};
@@ -295,8 +337,7 @@ def stylesheet(dark: bool) -> str:
         padding: 26px;
         background: {c['base']};
     }}
-    QFrame#SidebarTabs {{
+    QWidget#SidebarPanel {{
         background: {c['panel']};
-        border-right: 1px solid {c['border']};
     }}
     """
