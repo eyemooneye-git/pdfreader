@@ -15,6 +15,7 @@ from PySide6.QtGui import (
     QKeyEvent,
     QMouseEvent,
     QPainter,
+    QPainterPath,
     QPen,
     QPixmap,
     QResizeEvent,
@@ -465,10 +466,18 @@ class PageItem(QGraphicsItem):
         if self._selection_rects:
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(37, 99, 235, 92))
+            selection_path = QPainterPath()
+            selection_path.setFillRule(Qt.FillRule.WindingFill)
             for rect in self._selection_rects:
-                painter.drawRect(
-                    QRectF(rect.x0 * scale, rect.y0 * scale, rect.width * scale, rect.height * scale)
+                selection_path.addRect(
+                    QRectF(
+                        rect.x0 * scale,
+                        rect.y0 * scale,
+                        rect.width * scale,
+                        rect.height * scale,
+                    )
                 )
+            painter.drawPath(selection_path)
 
 
 class PdfView(QGraphicsView):

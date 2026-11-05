@@ -240,6 +240,66 @@ class PdfDocument:
                                 len(chars),
                             )
                         )
+        page_width = float(page.rect.width)
+        grouped: dict[tuple[int, int], list[TextChar]] = {}
+        for char in chars:
+            grouped.setdefault((char.block, char.line), []).append(char)
+
+        lines = list(grouped.values())
+        if page_width > 0 and len(lines) >= 4:
+            split = page_width * 0.5
+            left_lines = [
+                line
+                for line in lines
+                if max(char.x1 for char in line) < split
+                and min(char.x0 for char in line) < split * 0.75
+            ]
+            right_lines = [
+                line
+                for line in lines
+                if min(char.x0 for char in line) > split
+                and max(char.x1 for char in line) > split * 1.25
+            ]
+            if len(left_lines) >= 2 and len(right_lines) >= 2:
+                left_keys = {(char.block, char.line) for line in left_lines for char in line}
+                right_keys = {(char.block, char.line) for line in right_lines for char in line}
+
+                def line_y(line: list[TextChar]) -> float:
+                    return min(char.y0 for char in line)
+
+                ordered_keys = [
+                    (char.block, char.line)
+                    for line in sorted(left_lines, key=lambda item: (line_y(item), min(char.x0 for char in item)))
+                    for char in line[:1]
+                ]
+                ordered_keys += [
+                    (char.block, char.line)
+                    for line in sorted(right_lines, key=lambda item: (line_y(item), min(char.x0 for char in item)))
+                    for char in line[:1]
+                ]
+                column_keys = set(left_keys) | set(right_keys)
+                intermediate_keys = [
+                    key for key in grouped if key not in column_keys
+                ]
+                ordered_keys = intermediate_keys + ordered_keys
+
+                ordered_chars: list[TextChar] = []
+                for key in ordered_keys:
+                    line_chars = sorted(grouped[key], key=lambda char: (char.x0, char.index))
+                    ordered_chars.extend(line_chars)
+                chars = [
+                    TextChar(
+                        char.x0,
+                        char.y0,
+                        char.x1,
+                        char.y1,
+                        char.text,
+                        char.block,
+                        char.line,
+                        index,
+                    )
+                    for index, char in enumerate(ordered_chars)
+                ]
         self._chars[index] = chars
         return chars
 
