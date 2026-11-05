@@ -30,7 +30,7 @@
 - 打印（一页一张纸，自动缩放）
 - 最近打开、启动页、拖放 PDF 到窗口
 - 单实例：从资源管理器再打开一个 PDF，会在已有窗口里新建标签
-- 完整的“打开方式”注册，以及对应的卸载清理
+- 完全不写注册表：窗口大小、侧栏宽度、主题、最近文件都保存在 `%LOCALAPPDATA%\pdfreader\pdfreader.ini`
 - 界面跟随 Windows 显示语言：中文系统显示中文，其他系统显示英文
 
 ## 快速开始
@@ -43,40 +43,31 @@
 
 也可以双击 `pdfreader.exe`，在启动页选择文件，或把 PDF 拖进窗口。
 
-### 文件关联（右键 → 打开方式）
+### 配置存放位置
 
-有三种等价方式：
+程序**不写注册表**。所有状态都保存在：
 
-1. 程序里打开「文件 → 文件关联…」，点「注册 / 更新关联」。
-2. 构建时带上参数：`powershell -ExecutionPolicy Bypass -File build.ps1 -Register`
-3. 命令行：`.\pdfreader.exe --register`
+```text
+%LOCALAPPDATA%\pdfreader\pdfreader.ini
+```
 
-注册只写 `HKEY_CURRENT_USER`，**不需要管理员权限**。完成后：
+包括窗口大小与位置、导航栏宽度、深色模式、反色页面和最近打开的文件。删掉这个文件就恢复默认设置。
 
-- 右键任意 `.pdf` →「打开方式」→ 选择 `pdfreader`
-- 或者在「设置 → 应用 → 默认应用」里搜索 `pdfreader`，把 `.pdf` 交给它
+> 想在“打开方式”里看到 pdfreader，可以右键任意 PDF →「打开方式」→「选择其他应用」，手动选中 `pdfreader.exe`。这是 Windows 自己记录的（写入 `HKCU\...\Explorer\FileExts\.pdf`），程序本身不参与；exe 换目录后需要重选一次。
 
-> Windows 10/11 故意保护“默认应用”的最终选择（UserChoice 哈希），任何程序都无法静默把自己设为默认。pdfreader 会把自己注册成候选程序，最后一步需要你在系统设置里点一下确认。
+### 清理旧版本残留
 
-### 卸载 / 移除注册表
-
-“卸载”对绿色单文件程序来说就是删掉注册表里的关联：
-
-- 程序内：「文件 → 移除文件关联…」
-- 命令行：`.\pdfreader.exe --unregister`
-- 脚本（可同时删除 exe）：
+1.0 及更早的版本向 HKCU 写过文件关联和设置。升级后跑一次脚本即可清干净（`-RemoveFiles` 还会删除 exe 与配置文件）：
 
 ```powershell
-# 只清注册表，保留 exe
+# 只清注册表残留
 powershell -ExecutionPolicy Bypass -File uninstall.ps1
 
-# 清注册表并删除 pdfreader.exe
+# 连 pdfreader.exe 和 %LOCALAPPDATA%\pdfreader 一起删
 powershell -ExecutionPolicy Bypass -File uninstall.ps1 -RemoveFiles
 ```
 
-脚本会处理 exe 已被删除的情况，直接按同样的路径清理。它不会动你的 PDF 文件。
-
-注册表项（全部在 HKCU 下）：
+旧版本写过、脚本会清理的位置（全部在 HKCU 下，不需要管理员权限）：
 
 ```text
 HKCU\Software\Classes\PDFReader.pdf
@@ -86,9 +77,11 @@ HKCU\Software\Classes\Applications\pdfreader.exe
 HKCU\Software\PDFReader\Capabilities
 HKCU\Software\RegisteredApplications               (值 pdfreader)
 HKCU\Software\pdfreader                            (窗口位置、最近文件、主题)
+HKCU\...\Explorer\FileExts\.pdf\OpenWithList       ("打开方式"里的 pdfreader 条目)
+HKCU\...\Explorer\FileExts\.pdf\UserChoiceLatest   (仅当它指向 PDFReader.pdf)
 ```
 
-`uninstall.ps1` 会清理以上全部内容；程序内的“移除文件关联”和 `--unregister` 只清理文件关联，保留最近文件、窗口位置和主题设置。
+脚本只删除与 pdfreader 相关的值，不影响 `.pdf` 上已有的 Edge / Acrobat / 百度网盘等条目。
 
 ## 快捷键
 
@@ -118,9 +111,6 @@ python -m pip install -r requirements.txt
 
 # 生成示例 PDF、图标，然后打成单文件 exe，并复制到项目根目录
 powershell -ExecutionPolicy Bypass -File build.ps1
-
-# 想顺便注册关联
-powershell -ExecutionPolicy Bypass -File build.ps1 -Register
 ```
 
 产物是 `pdfreader.exe`（约 56 MB，one-file Qt 程序的正常体积）。首次启动会解压到临时目录，比多文件版本慢 1–3 秒。
@@ -159,12 +149,12 @@ powershell -ExecutionPolicy Bypass -File tools\make_icon.ps1
 pdfreader/
   run_pdfreader.py          开发 / PyInstaller 入口
   pdfreader/
-    app.py                  主窗口、启动页、标签页、文件关联对话框、单实例
+    app.py                  主窗口、启动页、标签页、单实例
     document.py             PyMuPDF 封装：页、字符、目录、搜索、密码
     view.py                 连续滚动视图、分块渲染、选中文字、查找高亮、缩放、链接
     sidebar.py              目录树 + 缩略图
     printing.py             打印
-    assoc.py                HKCU 文件关联的注册 / 移除
+    paths.py                资源路径、%LOCALAPPDATA% 配置目录、INI 设置
     i18n.py                 跟随系统语言的界面翻译
     theme.py                亮色 / 深色 QSS
     selftest.py             内置自检
@@ -175,7 +165,7 @@ pdfreader/
   pdfreader.spec            PyInstaller 配置
   version_info.txt          exe 版本信息
   build.ps1                 构建脚本
-  uninstall.ps1             清理注册表 / 可选删除 exe
+  uninstall.ps1             清理旧版本留下的注册表痕迹 / 可选删除 exe 与配置
 ```
 
 ## 实现说明
@@ -183,10 +173,10 @@ pdfreader/
 - **渲染**：页面按约 512 px 的小块分块渲染。拖动滚动条时先显示低分辨率整页预览，停止移动约 60 ms 后再逐块补齐清晰内容并合成完整页位图；单块只有几毫秒，事件循环始终能处理滚动条。缓存当前页附近的页面，离屏页面自动释放，避免大文档吃内存。高倍缩放时限制渲染分辨率。
 - **选字**：按字符命中（`page.get_text("rawdict")`），拖动时取起止字符之间的连续区间，因此可以只选单词的一部分，而不是整词/整行；按块/行拼成文本，中文、标点、英文空格分别处理。旋转页会用 `page.rotation_matrix` 把坐标映射到显示坐标。
 - **搜索**：每页调用 `page.search_for`，用 0ms 的 `QTimer` 分块处理，每块最多 6 页，避免大文档卡住 UI；命中总数上限 3000。
-- **缩略图**：同样是分块生成，每次最多 4 页；单列缩略图始终在侧栏中居中，侧栏宽度保存在 `QSettings` 中，下次启动继续使用。
+- **缩略图**：同样是分块生成，每次最多 4 页；单列缩略图始终在侧栏中居中，侧栏宽度保存在 `%LOCALAPPDATA%\pdfreader\pdfreader.ini` 中，下次启动继续使用。
 - **界面语言**：启动时读取 Windows 的显示语言；中文系统使用中文，英语及其他所有语言使用英文，不做运行时切换。调试时可用环境变量 `PDFREADER_LANG=zh` 或 `PDFREADER_LANG=en` 强制指定。
 - **单实例**：`QLocalServer` / `QLocalSocket`，第二个进程把文件路径发给已有窗口后退出。
-- **文件关联**：只写 HKCU，注册 ProgID、`OpenWithProgids`、`Applications\<exe>` 和 `RegisteredApplications` 能力项，并调用 `SHChangeNotify` 通知资源管理器刷新。
+- **配置**：`QSettings` 使用显式 INI 格式，文件位于 `%LOCALAPPDATA%\pdfreader\pdfreader.ini`；程序没有任何注册表读写代码。
 
 ## 已知限制
 
@@ -195,7 +185,7 @@ pdfreader/
 - 选字以 PDF 里的字符为最小单位；某些排版（多栏、表格）的复制顺序取决于 PDF 内部内容流。
 - 不支持编辑 PDF、批注、表单、签名、加密保存。
 - 超大文档（数千页）打开会先读取每页尺寸，可能有短暂等待；全选只选当前页。
-- 文件关联的“默认应用”最后一步必须在 Windows 设置里确认，这是系统限制。
+- 不做文件关联注册：需要在“打开方式”里手动选择一次 exe，之后由 Windows 记住。
 
 ## 参考项目
 

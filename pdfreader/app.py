@@ -6,14 +6,12 @@ import argparse
 import getpass
 import json
 import os
-import subprocess
 import sys
 from typing import Optional
 
-from PySide6.QtCore import QByteArray, QSettings, QSize, Qt, QTimer, QUrl, Signal
+from PySide6.QtCore import QByteArray, QSettings, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import (
     QAction,
-    QDesktopServices,
     QFont,
     QIcon,
     QKeySequence,
@@ -21,7 +19,6 @@ from PySide6.QtGui import (
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import (
     QApplication,
-    QDialog,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -51,18 +48,15 @@ except ImportError:  # pragma: no cover
     import fitz  # type: ignore
 
 from . import __version__
-from .assoc import (
-    AssocError,
-    app_executable,
-    default_apps_hint,
-    register,
-    registration_status,
-    resource_path,
-    unregister,
-)
 from .document import PasswordRequired, PdfDocument, PdfError
 from .i18n import install_qt_translator, tr
 from .icons import open_icon, print_icon
+from .paths import (
+    app_executable,
+    create_settings,
+    resource_path,
+    settings_file,
+)
 from .printing import print_document
 from .sidebar import PdfSidebar
 from .theme import colors, palette, stylesheet
@@ -126,7 +120,6 @@ class SearchEdit(QLineEdit):
 # --------------------------------------------------------------------------- welcome
 class WelcomePage(QWidget):
     open_requested = Signal()
-    register_requested = Signal()
     open_path_requested = Signal(str)
     clear_recent_requested = Signal()
 
@@ -150,12 +143,7 @@ class WelcomePage(QWidget):
         open_button.setMinimumWidth(150)
         open_button.clicked.connect(self.open_requested)
 
-        assoc_button = QPushButton(tr("注册文件关联…"))
-        assoc_button.clicked.connect(self.register_requested)
-
-        drop_hint = QLabel(
-            tr("把 PDF 拖到这里，或从资源管理器右键 → 打开方式 → pdfreader")
-        )
+        drop_hint = QLabel(tr("把 PDF 拖到这里，或按 Ctrl+O 打开"))
         drop_hint.setObjectName("DropHint")
         drop_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
         drop_hint.setWordWrap(True)
@@ -178,10 +166,7 @@ class WelcomePage(QWidget):
         self.recent_list.itemClicked.connect(self._recent_activated)
 
         hint = QLabel(
-            tr(
-                "提示：注册后首次使用，请在 Windows 11 的“设置 → 应用 → 默认应用”中"
-                "把 .pdf 交给 pdfreader；系统不允许程序静默抢走默认应用。"
-            )
+            tr("配置文件：{path}（程序不写注册表）").format(path=settings_file())
         )
         hint.setObjectName("Hint")
         hint.setWordWrap(True)
@@ -194,7 +179,6 @@ class WelcomePage(QWidget):
         buttons = QHBoxLayout()
         buttons.setSpacing(10)
         buttons.addWidget(open_button)
-        buttons.addWidget(assoc_button)
         buttons.addStretch(1)
         card_layout.addLayout(buttons)
         card_layout.addSpacing(6)
@@ -312,114 +296,9 @@ class PdfTab(QWidget):
         self.document.close()
 
 
-# --------------------------------------------------------------------------- dialogs
-class AssociationDialog(QDialog):
-    def __init__(self, parent=None) -> None:
-        super().__init__(parent)
-        self.setWindowTitle(tr("文件关联"))
-        self.setMinimumWidth(560)
-
-        title = QLabel(tr("让 pdfreader 出现在“打开方式”里"))
-        title.setObjectName("SectionTitle")
-        body = QLabel(
-            tr(
-                "注册信息只写入当前用户（HKCU），不需要管理员权限。"
-                "注册后，右键任意 PDF →「打开方式」就能看到 pdfreader。\n\n"
-            )
-            + default_apps_hint()
-        )
-        body.setWordWrap(True)
-
-        self.status_label = QLabel("")
-        self.status_label.setObjectName("StatusStrong")
-        self.status_label.setWordWrap(True)
-
-        self.path_label = QLabel(app_executable())
-        self.path_label.setObjectName("Hint")
-        self.path_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        self.path_label.setWordWrap(True)
-
-        self.register_button = QPushButton(tr("注册 / 更新关联"))
-        self.register_button.setObjectName("primary")
-        self.remove_button = QPushButton(tr("移除关联"))
-        settings_button = QPushButton(tr("打开默认应用设置"))
-        close_button = QPushButton(tr("关闭"))
-
-        self.register_button.clicked.connect(self._register)
-        self.remove_button.clicked.connect(self._remove)
-        settings_button.clicked.connect(self._open_default_settings)
-        close_button.clicked.connect(self.accept)
-
-        buttons = QHBoxLayout()
-        buttons.addWidget(self.register_button)
-        buttons.addWidget(self.remove_button)
-        buttons.addWidget(settings_button)
-        buttons.addStretch(1)
-        buttons.addWidget(close_button)
-
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(24, 22, 24, 20)
-        layout.setSpacing(12)
-        layout.addWidget(title)
-        layout.addWidget(body)
-        layout.addWidget(self.status_label)
-        layout.addWidget(self.path_label)
-        layout.addSpacing(6)
-        layout.addLayout(buttons)
-
-        self._refresh()
-
-    def _refresh(self) -> None:
-        registered, detail = registration_status()
-        self.status_label.setText(("● " if registered else "○ ") + detail)
-        self.remove_button.setEnabled(True)
-
-    def _register(self) -> None:
-        try:
-            register()
-        except AssocError as exc:
-            QMessageBox.critical(self, tr("注册失败"), str(exc))
-            return
-        self._refresh()
-        QMessageBox.information(
-            self,
-            tr("已注册"),
-            tr("完成。现在右键 PDF →「打开方式」里会出现 pdfreader。\n\n")
-            + default_apps_hint(),
-        )
-
-    def _remove(self) -> None:
-        answer = QMessageBox.question(
-            self,
-            tr("移除文件关联"),
-            tr(
-                "移除 pdfreader 写入注册表的所有内容？\n\n"
-                "这不会删除 pdfreader.exe 本身。"
-            ),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        )
-        if answer != QMessageBox.StandardButton.Yes:
-            return
-        try:
-            unregister()
-        except AssocError as exc:
-            QMessageBox.critical(self, tr("移除失败"), str(exc))
-            return
-        self._refresh()
-        QMessageBox.information(self, tr("已移除"), tr("注册表关联已删除。"))
-
-    def _open_default_settings(self) -> None:
-        if not QDesktopServices.openUrl(QUrl("ms-settings:defaultapps")):
-            subprocess.Popen(
-                ["control", "/name", "Microsoft.DefaultPrograms"],
-                shell=False,
-            )
-
-
 # --------------------------------------------------------------------------- main window
 class MainWindow(QMainWindow):
-    def __init__(self) -> None:
+    def __init__(self, settings: Optional[QSettings] = None) -> None:
         super().__init__()
         self.setWindowTitle(APP_NAME)
         self.setWindowIcon(QIcon(str(resource_path("assets/pdfreader.ico"))))
@@ -427,7 +306,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(760, 520)
         self.setAcceptDrops(True)
 
-        self.settings = QSettings(ORG_NAME, APP_NAME)
+        self.settings = settings or create_settings()
         self.dark_mode = _settings_bool(self.settings, "ui/dark", False)
         self.invert_pages = _settings_bool(self.settings, "ui/invert", False)
         self.sidebar_visible = _settings_bool(self.settings, "ui/sidebar", True)
@@ -456,7 +335,6 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget(self)
         self.welcome = WelcomePage(self)
         self.welcome.open_requested.connect(self.choose_files)
-        self.welcome.register_requested.connect(self.show_association_dialog)
         self.welcome.open_path_requested.connect(self.open_path)
         self.welcome.clear_recent_requested.connect(self._clear_recent)
         self.stack.addWidget(self.welcome)
@@ -479,12 +357,6 @@ class MainWindow(QMainWindow):
         self.action_print = QAction(tr("打印…"), self)
         self.action_print.setShortcut(QKeySequence.StandardKey.Print)
         self.action_print.triggered.connect(self.print_current)
-
-        self.action_assoc = QAction(tr("文件关联…"), self)
-        self.action_assoc.triggered.connect(self.show_association_dialog)
-
-        self.action_uninstall = QAction(tr("移除文件关联…"), self)
-        self.action_uninstall.triggered.connect(self.remove_association)
 
         self.action_quit = QAction(tr("退出"), self)
         self.action_quit.setShortcut(QKeySequence.StandardKey.Quit)
@@ -566,9 +438,6 @@ class MainWindow(QMainWindow):
         file_menu.addAction(self.action_print)
         file_menu.addSeparator()
         self.recent_menu = file_menu.addMenu(tr("最近打开"))
-        file_menu.addSeparator()
-        file_menu.addAction(self.action_assoc)
-        file_menu.addAction(self.action_uninstall)
         file_menu.addSeparator()
         file_menu.addAction(self.action_quit)
 
@@ -1254,33 +1123,6 @@ class MainWindow(QMainWindow):
             return
         self.search_count.setText(f"{current}/{total}")
 
-    # --------------------------------------------------------------- dialogs
-    def show_association_dialog(self) -> None:
-        dialog = AssociationDialog(self)
-        dialog.exec()
-
-    def remove_association(self) -> None:
-        answer = QMessageBox.question(
-            self,
-            tr("移除文件关联"),
-            tr(
-                "移除 pdfreader 写入注册表的文件关联？\n\n"
-                "pdfreader 是绿色单文件程序，这一步不会删除 exe，"
-                "也不会清除最近文件、窗口位置和主题设置。\n"
-                "之后仍可重新注册。"
-            ),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        )
-        if answer != QMessageBox.StandardButton.Yes:
-            return
-        try:
-            unregister()
-        except AssocError as exc:
-            QMessageBox.critical(self, tr("移除失败"), str(exc))
-            return
-        QMessageBox.information(self, tr("已移除"), tr("注册表关联已删除。"))
-
     def show_shortcuts(self) -> None:
         QMessageBox.information(
             self,
@@ -1425,18 +1267,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("files", nargs="*", help=tr("要打开的 PDF 文件"))
     parser.add_argument(
-        "--register",
-        action="store_true",
-        help=tr("注册 .pdf 文件关联（仅当前用户）"),
-    )
-    parser.add_argument(
-        "--unregister",
-        "--uninstall",
-        dest="unregister",
-        action="store_true",
-        help=tr("移除本程序写入注册表的文件关联"),
-    )
-    parser.add_argument(
         "--selftest",
         nargs="?",
         const="",
@@ -1454,24 +1284,6 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Optional[list[str]] = None) -> int:
     args = build_parser().parse_args(argv)
-
-    if args.register:
-        try:
-            register()
-        except AssocError as exc:
-            print(tr("注册失败：{error}").format(error=exc), file=sys.stderr)
-            return 1
-        print(tr("已注册 .pdf 文件关联（HKCU）。"))
-        return 0
-
-    if args.unregister:
-        try:
-            unregister()
-        except AssocError as exc:
-            print(tr("移除失败：{error}").format(error=exc), file=sys.stderr)
-            return 1
-        print(tr("已移除注册表关联。"))
-        return 0
 
     QApplication.setApplicationName(APP_NAME)
     QApplication.setOrganizationName(ORG_NAME)
@@ -1496,10 +1308,11 @@ def main(argv: Optional[list[str]] = None) -> int:
         if _send_to_running_instance(files):
             return 0
 
-    dark = _settings_bool(QSettings(ORG_NAME, APP_NAME), "ui/dark", False)
+    settings = create_settings()
+    dark = _settings_bool(settings, "ui/dark", False)
     app.setStyleSheet(stylesheet(dark))
 
-    window = MainWindow()
+    window = MainWindow(settings)
     window.show()
     if files:
         QTimer.singleShot(0, lambda: window.open_paths(files))

@@ -21,7 +21,6 @@ except ImportError:  # pragma: no cover
     import fitz  # type: ignore
 
 from . import __version__
-from .assoc import project_root
 from .document import PdfDocument
 from .i18n import (
     current_language,
@@ -30,6 +29,7 @@ from .i18n import (
     set_language,
     tr,
 )
+from .paths import project_root
 from .theme import palette, stylesheet
 
 

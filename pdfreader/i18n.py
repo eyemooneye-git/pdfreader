@@ -21,46 +21,16 @@ _EN: dict[str, str] = {
     "轻量 PDF 阅读器 · 选中文字即可复制 · 全文搜索 · 多标签":
         "Lightweight PDF reader · Select text to copy · Full-text search · Tabs",
     "打开 PDF…": "Open PDF…",
-    "注册文件关联…": "Register file association…",
-    "把 PDF 拖到这里，或从资源管理器右键 → 打开方式 → pdfreader":
-        "Drop a PDF here, or right-click a PDF in Explorer → Open with → pdfreader",
+    "把 PDF 拖到这里，或按 Ctrl+O 打开":
+        "Drop a PDF here, or press Ctrl+O",
     "最近打开": "Recent files",
     "清空": "Clear",
-    "提示：注册后首次使用，请在 Windows 11 的“设置 → 应用 → 默认应用”中"
-    "把 .pdf 交给 pdfreader；系统不允许程序静默抢走默认应用。":
-        "Tip: After registering, set .pdf to pdfreader the first time in "
-        "Windows 11 Settings → Apps → Default apps. Windows does not allow an "
-        "app to take over the default silently.",
+    "配置文件：{path}（程序不写注册表）":
+        "Settings file: {path} (the app writes nothing to the registry)",
     "还没有最近打开的文件": "No recent files yet",
-    # Association dialog
-    "文件关联": "File association",
-    "让 pdfreader 出现在“打开方式”里": "Make pdfreader appear in “Open with”",
-    "注册信息只写入当前用户（HKCU），不需要管理员权限。"
-    "注册后，右键任意 PDF →「打开方式」就能看到 pdfreader。\n\n":
-        "Registration writes only to the current user (HKCU) and does not "
-        "require administrator rights. After registering, right-click any PDF "
-        "→ “Open with” to see pdfreader.\n\n",
-    "注册 / 更新关联": "Register / Update association",
-    "移除关联": "Remove association",
-    "打开默认应用设置": "Open default apps settings",
-    "关闭": "Close",
-    "注册失败": "Registration failed",
-    "已注册": "Registered",
-    "完成。现在右键 PDF →「打开方式」里会出现 pdfreader。\n\n":
-        "Done. pdfreader will now appear under “Open with” when you right-click "
-        "a PDF.\n\n",
-    "移除文件关联": "Remove file association",
-    "移除 pdfreader 写入注册表的所有内容？\n\n这不会删除 pdfreader.exe 本身。":
-        "Remove everything pdfreader wrote to the registry?\n\n"
-        "This does not delete pdfreader.exe itself.",
-    "移除失败": "Removal failed",
-    "已移除": "Removed",
-    "注册表关联已删除。": "The registry association has been removed.",
     # Actions and menus
     "打开…": "Open…",
     "打印…": "Print…",
-    "文件关联…": "File association…",
-    "移除文件关联…": "Remove file association…",
     "退出": "Quit",
     "复制": "Copy",
     "全选": "Select All",
@@ -119,15 +89,6 @@ _EN: dict[str, str] = {
     "打印任务已发送": "Print job sent",
     "搜索中…": "Searching…",
     "无结果": "No results",
-    # Removing the association
-    "移除 pdfreader 写入注册表的文件关联？\n\n"
-    "pdfreader 是绿色单文件程序，这一步不会删除 exe，"
-    "也不会清除最近文件、窗口位置和主题设置。\n"
-    "之后仍可重新注册。":
-        "Remove the file association written by pdfreader?\n\n"
-        "pdfreader is a portable single-file app. This does not delete the exe "
-        "or clear recent files, window position, or theme settings.\n"
-        "You can register again later.",
     # Shortcuts dialog
     "Ctrl+O    打开 PDF\n"
     "Ctrl+P    打印\n"
@@ -170,32 +131,8 @@ _EN: dict[str, str] = {
     "轻量 PDF 阅读器：选中文字复制、搜索、目录、多标签。":
         "Lightweight PDF reader with text selection and copying, search, outline, and tabs.",
     "要打开的 PDF 文件": "PDF files to open",
-    "注册 .pdf 文件关联（仅当前用户）":
-        "Register the .pdf file association (current user only)",
-    "移除本程序写入注册表的文件关联":
-        "Remove the file association written by this app",
     "运行内置自检": "Run the built-in self-test",
     "允许启动多个独立窗口": "Allow multiple independent windows",
-    "注册失败：{error}": "Registration failed: {error}",
-    "已注册 .pdf 文件关联（HKCU）。": "Registered the .pdf file association (HKCU).",
-    "移除失败：{error}": "Removal failed: {error}",
-    "已移除注册表关联。": "Removed the registry association.",
-    # Registry / association
-    "无法打开注册表项 {path}：{error}": "Cannot open registry key {path}: {error}",
-    "无法删除注册表项 {path}：{error}": "Cannot delete registry key {path}: {error}",
-    "PDF 文档": "PDF Document",
-    "轻量 PDF 阅读器": "Lightweight PDF reader",
-    "轻量、离线、可复制文字的 PDF 阅读器":
-        "Lightweight, offline PDF reader with text selection and copying",
-    "写入注册表失败：{error}": "Failed to write to the registry: {error}",
-    "尚未注册文件关联": "File association is not registered",
-    "已注册（当前 exe）": "Registered (current exe)",
-    "已注册到另一个位置：{command}": "Registered at another location: {command}",
-    "Windows 11 不允许程序静默修改默认应用。注册后请到"
-    "“设置 → 应用 → 默认应用 → pdfreader → .pdf”确认即可。":
-        "Windows 11 does not allow an app to change the default silently. "
-        "After registering, confirm it in Settings → Apps → Default apps → "
-        "pdfreader → .pdf.",
     # Document errors
     "无法打开 PDF：{error}": "Cannot open PDF: {error}",
     "这个文件不是 PDF。": "This file is not a PDF.",
