@@ -45,7 +45,6 @@ _EN: dict[str, str] = {
     "适应页面": "Fit Page",
     "实际大小": "Actual Size",
     "深色模式": "Dark Mode",
-    "反色页面（夜间阅读）": "Invert Pages (Night Reading)",
     "全屏": "Full Screen",
     "快捷键": "Keyboard Shortcuts",
     "关于 pdfreader": "About pdfreader",

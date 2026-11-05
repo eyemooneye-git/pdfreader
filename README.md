@@ -26,7 +26,7 @@
 - `Ctrl+F` 全文搜索，高亮全部命中，Enter / Shift+Enter 切换结果
 - 导航栏（目录 / 缩略图两个标签页；缩略图分批生成，不卡界面，自动居中，宽度会记住）
 - 缩放：适应宽度、适应页面、50%–400%、`Ctrl+滚轮` 以鼠标位置为中心缩放
-- 深色界面；可选“反色页面”夜间阅读
+- 深色界面（视图菜单切换）
 - 打印（一页一张纸，自动缩放）
 - 最近打开、启动页、拖放 PDF 到窗口
 - 单实例：从资源管理器再打开一个 PDF，会在已有窗口里新建标签
@@ -51,7 +51,7 @@
 %LOCALAPPDATA%\pdfreader\pdfreader.ini
 ```
 
-包括窗口大小与位置、导航栏宽度、深色模式、反色页面和最近打开的文件。删掉这个文件就恢复默认设置。
+包括窗口大小与位置、导航栏宽度、深色模式和最近打开的文件。删掉这个文件就恢复默认设置。
 
 > 想在“打开方式”里看到 pdfreader，可以右键任意 PDF →「打开方式」→「选择其他应用」，手动选中 `pdfreader.exe`。这是 Windows 自己记录的（写入 `HKCU\...\Explorer\FileExts\.pdf`），程序本身不参与；exe 换目录后需要重选一次。
 
@@ -113,7 +113,7 @@ python -m pip install -r requirements.txt
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
-产物是 `pdfreader.exe`（约 56 MB，one-file Qt 程序的正常体积）。首次启动会解压到临时目录，比多文件版本慢 1–3 秒。
+产物是 `pdfreader.exe`（约 45 MB）。`pdfreader.spec` 会裁掉 PySide6 默认打包但本程序用不到的部分：`opengl32sw.dll`（纯 QtWidgets，不用 OpenGL）、`Qt6Svg` 与 SVG/JPEG/TIFF/WebP 等图片格式插件、TLS 与 `networkinformation` 插件、`qdirect2d`/`qminimal`/`qoffscreen` 平台插件、`qmodernwindowsstyle` 样式插件，以及除 `qtbase_zh_CN` 之外的全部 Qt 翻译。保留的是 QtCore/Gui/Widgets/Network/PrintSupport/Test、`qwindows` 平台插件和 `qico` 图标插件。首次启动会解压到临时目录，比多文件版本慢 1–3 秒。
 
 开发时直接跑源码：
 

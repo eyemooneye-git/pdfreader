@@ -271,8 +271,6 @@ class PageItem(QGraphicsItem):
             )
             fmt = QImage.Format.Format_RGBA8888 if pix.alpha else QImage.Format.Format_RGB888
             image = QImage(pix.samples, pix.width, pix.height, pix.stride, fmt).copy()
-            if self.view.invert_pages:
-                image.invertPixels(QImage.InvertMode.InvertRgb)
             pixmap = QPixmap.fromImage(image)
             if pixmap.isNull():
                 raise RuntimeError("empty preview")
@@ -349,8 +347,6 @@ class PageItem(QGraphicsItem):
                 else QImage.Format.Format_RGB888
             )
             image = QImage(pix.samples, pix.width, pix.height, pix.stride, fmt).copy()
-            if self.view.invert_pages:
-                image.invertPixels(QImage.InvertMode.InvertRgb)
             pixmap = QPixmap.fromImage(image)
             if pixmap.isNull():
                 raise RuntimeError("empty tile")
@@ -494,7 +490,6 @@ class PdfView(QGraphicsView):
         ]
         self.zoom = 1.0
         self.zoom_mode = "custom"  # "custom" | "width" | "page"
-        self.invert_pages = False
         self.dark_background = False
 
         self._anchor: Optional[tuple[int, float, float]] = None
@@ -1267,14 +1262,6 @@ class PdfView(QGraphicsView):
                 self.goto_page(int(resolved["page"]))
 
     # ------------------------------------------------------------------ misc
-    def set_invert_pages(self, invert: bool) -> None:
-        if invert == self.invert_pages:
-            return
-        self.invert_pages = invert
-        for item in self.pages:
-            item.release_pixmap()
-        self.viewport().update()
-
     def set_dark_background(self, dark: bool) -> None:
         self.dark_background = dark
         self.setBackgroundBrush(QColor("#0B0D11" if dark else "#E7E9EE"))
@@ -1326,7 +1313,7 @@ class PdfView(QGraphicsView):
 
     def _release_far_pixmaps(self, force: bool = False) -> None:
         if force:
-            # Zoom / invert changes invalidate every pixmap; drop them now.
+            # Zoom changes invalidate every pixmap; drop them now.
             for item in self.pages:
                 item.release_pixmap()
             return

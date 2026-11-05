@@ -308,7 +308,6 @@ class MainWindow(QMainWindow):
 
         self.settings = settings or create_settings()
         self.dark_mode = _settings_bool(self.settings, "ui/dark", False)
-        self.invert_pages = _settings_bool(self.settings, "ui/invert", False)
         self.sidebar_visible = _settings_bool(self.settings, "ui/sidebar", True)
         self.sidebar_width = _settings_int(
             self.settings, "ui/sidebar_width", 280, 220, 560
@@ -414,11 +413,6 @@ class MainWindow(QMainWindow):
         self.action_dark.setChecked(self.dark_mode)
         self.action_dark.toggled.connect(self.set_dark_mode)
 
-        self.action_invert = QAction(tr("反色页面（夜间阅读）"), self)
-        self.action_invert.setCheckable(True)
-        self.action_invert.setChecked(self.invert_pages)
-        self.action_invert.toggled.connect(self.set_invert_pages)
-
         self.action_fullscreen = QAction(tr("全屏"), self)
         self.action_fullscreen.setCheckable(True)
         self.action_fullscreen.setShortcut(QKeySequence(Qt.Key.Key_F11))
@@ -460,7 +454,6 @@ class MainWindow(QMainWindow):
         view_menu.addAction(self.action_actual_size)
         view_menu.addSeparator()
         view_menu.addAction(self.action_dark)
-        view_menu.addAction(self.action_invert)
         view_menu.addAction(self.action_fullscreen)
 
         help_menu = menubar.addMenu(tr("帮助(&H)"))
@@ -570,8 +563,6 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(search_prev)
         toolbar.addWidget(search_next)
         toolbar.addWidget(self.search_count)
-        toolbar.addSeparator()
-        toolbar.addAction(self.action_dark)
 
     def _build_statusbar(self) -> None:
         bar = QStatusBar(self)
@@ -619,14 +610,6 @@ class MainWindow(QMainWindow):
         self.settings.setValue("ui/dark", enabled)
         self.apply_theme()
         self.action_dark.setChecked(enabled)
-
-    def set_invert_pages(self, enabled: bool) -> None:
-        self.invert_pages = enabled
-        self.settings.setValue("ui/invert", enabled)
-        for index in range(self.tabs.count()):
-            tab = self.tabs.widget(index)
-            if isinstance(tab, PdfTab):
-                tab.view.set_invert_pages(enabled)
 
     def set_sidebar_visible(self, visible: bool) -> None:
         self.sidebar_visible = visible
@@ -777,7 +760,6 @@ class MainWindow(QMainWindow):
         tab = PdfTab(document, self.sidebar_width, self)
         tab.sidebar_width_changed.connect(self._on_sidebar_width_changed)
         tab.view.set_dark_background(self.dark_mode)
-        tab.view.invert_pages = self.invert_pages
         tab.set_sidebar_visible(self.sidebar_visible)
         tab.view.status_message.connect(self.show_status)
         tab.view.selection_changed.connect(self._on_selection_changed)
@@ -839,7 +821,6 @@ class MainWindow(QMainWindow):
         self.settings.setValue("ui/sidebar", self.sidebar_visible)
         self.settings.setValue("ui/sidebar_width", self.sidebar_width)
         self.settings.setValue("ui/dark", self.dark_mode)
-        self.settings.setValue("ui/invert", self.invert_pages)
         self.settings.sync()
         if getattr(self, "_server", None) is not None:
             self._server.close()
@@ -916,7 +897,6 @@ class MainWindow(QMainWindow):
         try:
             self.action_print.setEnabled(view is not None)
             self.action_sidebar.setEnabled(view is not None)
-            self.action_invert.setEnabled(view is not None)
             self.page_edit.setEnabled(view is not None)
             self.search_edit.setEnabled(view is not None)
             if view is None:

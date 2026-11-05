@@ -92,6 +92,49 @@ a = Analysis(
     optimize=1,
 )
 
+# ---------------------------------------------------------------------------
+# Trim the Qt runtime.  pdfreader is a pure QtWidgets app: it never uses
+# QtQuick/OpenGL, SVG assets, TLS sockets or non-English Qt strings, but the
+# PySide6 hooks collect those plugin folders and all translation files anyway.
+# Note that QSettings itself lives in QtCore and cannot be dropped; it is
+# simply pointed at an INI file by pdfreader/paths.py.
+_UNUSED_BINARIES = (
+    "opengl32sw.dll",
+    "qt6svg.dll",
+    "plugins\\generic\\qtuiotouchplugin.dll",
+    "plugins\\iconengines\\qsvgicon.dll",
+    "plugins\\imageformats\\qgif.dll",
+    "plugins\\imageformats\\qicns.dll",
+    "plugins\\imageformats\\qjpeg.dll",
+    "plugins\\imageformats\\qsvg.dll",
+    "plugins\\imageformats\\qtga.dll",
+    "plugins\\imageformats\\qtiff.dll",
+    "plugins\\imageformats\\qwbmp.dll",
+    "plugins\\imageformats\\qwebp.dll",
+    "plugins\\networkinformation\\qnetworklistmanager.dll",
+    "plugins\\platforms\\qdirect2d.dll",
+    "plugins\\platforms\\qminimal.dll",
+    "plugins\\platforms\\qoffscreen.dll",
+    "plugins\\styles\\qmodernwindowsstyle.dll",
+    "plugins\\tls\\qcertonlybackend.dll",
+    "plugins\\tls\\qopensslbackend.dll",
+    "plugins\\tls\\qschannelbackend.dll",
+)
+
+a.binaries = [
+    entry
+    for entry in a.binaries
+    if not entry[0].replace("/", "\\").lower().endswith(_UNUSED_BINARIES)
+]
+
+# Only the Simplified Chinese Qt strings are shipped; English is built into Qt
+# and the app carries its own English dictionary.
+a.datas = [
+    entry
+    for entry in a.datas
+    if not entry[0].replace("/", "\\").lower().startswith("pyside6\\translations\\")
+]
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
